@@ -12,6 +12,7 @@ header h1{margin:0;font-size:24px}header small{color:var(--y)}
 .card{background:#fff;border-radius:20px;padding:22px 14px;text-align:center;box-shadow:0 4px 14px rgba(11,61,145,.12);margin:14px 0;cursor:pointer;border:2px solid transparent}
 .card:active{border-color:var(--y)}.card i{display:block;font-style:normal;font-size:46px;margin-bottom:6px}
 .card b{font-size:19px;color:var(--b)}.card p{margin:6px 0 0;color:#667}
+input{width:100%;padding:12px;margin:6px 0;border:1px solid #9bb4e0;border-radius:12px;font:inherit;background:#fff}
 button{font:inherit;border:0;border-radius:12px;padding:12px 18px;background:var(--b);color:#fff;cursor:pointer}
 button.y{background:var(--y);color:var(--tx);font-weight:bold}
 .ver{text-align:center;color:#99a;font-size:12px;margin-top:24px}
@@ -28,15 +29,23 @@ function setSt(t){st=t;const e=document.getElementById('st');if(e)e.textContent=
 function initFB(){try{firebase.initializeApp(FB);db=firebase.firestore();
  firebase.auth().signInAnonymously().then(u=>{uid=u.user.uid;return db.collection('ping').doc(uid).set({t:Date.now()})})
  .then(()=>setSt('✅ متصل بالسيرفر')).catch(e=>setSt('❌ خطأ: '+(e.code||e.message)))}catch(e){setSt('❌ '+e.message)}}
-const VER='1.1 - المرحلة 2';let v='home';
+const VER='1.2 - المرحلة 3 (تسجيل الراكب)';let v='home';
 const $=id=>document.getElementById(id);
 function toast(m){const t=document.createElement('div');t.textContent=m;t.style.cssText='position:fixed;left:50%;bottom:calc(30px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#0b3d91;color:#fff;padding:12px 20px;border-radius:14px;z-index:120;max-width:85%;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.3)';document.body.appendChild(t);setTimeout(()=>t.remove(),2800)}
 function ask(m,ok){const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:120;display:flex;align-items:center;justify-content:center';d.innerHTML=`<div style="background:#fff;padding:20px;width:80%;max-width:320px;text-align:center;border-radius:18px"><p style="font-weight:bold">${m}</p><button id="y" class="y" style="margin:4px">نعم</button><button id="n" style="margin:4px;background:#889">إلغاء</button></div>`;document.body.appendChild(d);d.querySelector('#y').onclick=()=>{d.remove();ok()};d.querySelector('#n').onclick=()=>d.remove()}
+const P=()=>{try{return JSON.parse(localStorage.getItem('karaj_rider')||'null')}catch(e){return null}};
+function riderV(){const p=P(),a=$('app');
+ if(!p){a.innerHTML=`<div class="card" style="cursor:default"><i>🧍</i><b>تسجيل الراكب</b><input id="rn" placeholder="الاسم الكامل"><input id="rp" type="tel" inputmode="numeric" placeholder="رقم الهاتف 07XXXXXXXXX" maxlength="11"><button class="y" style="width:100%" onclick="saveRider()">تسجيل</button></div><button style="width:100%" onclick="go('home')">رجوع</button>`;return}
+ a.innerHTML=`<div class="card" style="cursor:default"><i>👋</i><b>أهلاً ${p.name}</b><p>${p.phone}</p></div><div class="card" style="cursor:default"><i>🚖</i><b>اطلب سيارة</b><p>تُفعَّل في الخطوة القادمة</p></div><button style="width:100%;margin-bottom:8px" onclick="ask('تغيير بيانات التسجيل؟',()=>{localStorage.removeItem('karaj_rider');riderV()})">تغيير بياناتي</button><button class="y" style="width:100%" onclick="go('home')">رجوع</button>`}
+function saveRider(){const name=$('rn').value.trim(),phone=$('rp').value.trim().replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+ if(name.length<3)return toast('اكتب اسمك الكامل');if(!/^07\d{9}$/.test(phone))return toast('رقم الهاتف غير صحيح، مثال: 07701234567');if(!uid)return toast('انتظر اتصال السيرفر ثم أعد المحاولة');
+ db.collection('riders').doc(uid).set({name,phone,at:Date.now()}).then(()=>{localStorage.setItem('karaj_rider',JSON.stringify({name,phone}));toast('تم التسجيل ✅');riderV()}).catch(e=>toast('خطأ: '+(e.code||e.message)))}
 function go(x){v=x;draw();scrollTo(0,0)}
 function draw(){const a=$('app');
  if(v=='home')a.innerHTML=`<div class="card" onclick="go('rider')"><i>🧍</i><b>أنا راكب</b><p>اطلب سيارة لوجهتك</p></div>
   <div class="card" onclick="go('driver')"><i>🚗</i><b>أنا سائق</b><p>استقبل طلبات الركاب</p></div><div class="ver">الإصدار ${VER}</div><div class="ver" id="st" style="font-weight:bold">${st}</div>`;
+ else if(v=='rider')riderV();
  else a.innerHTML=`<div class="card" style="cursor:default"><i>${v=='rider'?'🧍':'🚗'}</i><b>${v=='rider'?'شاشة الراكب':'شاشة السائق'}</b><p>تُفعَّل في المرحلة القادمة</p></div><button class="y" style="width:100%" onclick="go('home')">رجوع</button>`;
- if(v!='home')toast('تعمل الواجهة بنجاح ✅')}
+ if(v=='driver')toast('تعمل الواجهة بنجاح ✅')}
 initFB();draw();if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
 </script></body></html>
