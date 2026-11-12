@@ -14,7 +14,7 @@ header h1{margin:0;font-size:24px}header small{color:var(--y)}
 .card:active{border-color:var(--y)}.card i{display:block;font-style:normal;font-size:46px;margin-bottom:6px}
 .card b{font-size:19px;color:var(--b)}.card p{margin:6px 0 0;color:#667}
 #map{height:320px;border-radius:16px;z-index:0;margin:8px 0}
-input{width:100%;padding:12px;margin:6px 0;border:1px solid #9bb4e0;border-radius:12px;font:inherit;background:#fff}
+input,select{width:100%;padding:12px;margin:6px 0;border:1px solid #9bb4e0;border-radius:12px;font:inherit;background:#fff}
 button{font:inherit;border:0;border-radius:12px;padding:12px 18px;background:var(--b);color:#fff;cursor:pointer}
 button.y{background:var(--y);color:var(--tx);font-weight:bold}
 .ver{text-align:center;color:#99a;font-size:12px;margin-top:24px}
@@ -32,14 +32,50 @@ function setSt(t){st=t;const e=document.getElementById('st');if(e)e.textContent=
 function initFB(){try{firebase.initializeApp(FB);db=firebase.firestore();
  firebase.auth().signInAnonymously().then(u=>{uid=u.user.uid;return db.collection('ping').doc(uid).set({t:Date.now()})})
  .then(()=>setSt('✅ متصل بالسيرفر')).catch(e=>setSt('❌ خطأ: '+(e.code||e.message)))}catch(e){setSt('❌ '+e.message)}}
-const VER='1.6 - المرحلة 3 (إصلاح الخرائط)';let v='home';
+const VER='2.0 - الراكب والسائق والمطابقة';let v='home';
 const $=id=>document.getElementById(id);
 function toast(m){const t=document.createElement('div');t.textContent=m;t.style.cssText='position:fixed;left:50%;bottom:calc(30px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#0b3d91;color:#fff;padding:12px 20px;border-radius:14px;z-index:120;max-width:85%;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.3)';document.body.appendChild(t);setTimeout(()=>t.remove(),2800)}
 function ask(m,ok){const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:120;display:flex;align-items:center;justify-content:center';d.innerHTML=`<div style="background:#fff;padding:20px;width:80%;max-width:320px;text-align:center;border-radius:18px"><p style="font-weight:bold">${m}</p><button id="y" class="y" style="margin:4px">نعم</button><button id="n" style="margin:4px;background:#889">إلغاء</button></div>`;document.body.appendChild(d);d.querySelector('#y').onclick=()=>{d.remove();ok()};d.querySelector('#n').onclick=()=>d.remove()}
-const P=()=>{try{return JSON.parse(localStorage.getItem('karaj_rider')||'null')}catch(e){return null}};
-function riderV(){const p=P(),a=$('app');
- if(!p){a.innerHTML=`<div class="card" style="cursor:default"><i>🧍</i><b>تسجيل الراكب</b><input id="rn" placeholder="الاسم الكامل"><input id="rp" type="tel" inputmode="numeric" placeholder="رقم الهاتف 07XXXXXXXXX" maxlength="11"><button class="y" style="width:100%" onclick="saveRider()">تسجيل</button></div><button style="width:100%" onclick="go('home')">رجوع</button>`;return}
- a.innerHTML=`<div class="card" style="cursor:default"><i>👋</i><b>أهلاً ${p.name}</b><p>${p.phone}</p></div><div class="card" style="cursor:default;padding:14px"><b>🗺️ حدّد موقعك</b><div id="map"></div><div id="loc" style="margin:8px 0;font-size:14px">لم تحدد موقعك بعد: اضغط على الخريطة أو اسحب الدبوس أو استخدم زر موقعي</div><input id="near" placeholder="أقرب نقطة دالة (مثال: قرب مستشفى الشطرة)"><button class="y" style="width:100%" onclick="myLoc()">📍 موقعي الحالي</button><button style="width:100%;margin-top:8px" onclick="toggleSat()">🛰️ تبديل نوع الخريطة</button></div><button style="width:100%;margin-bottom:8px" onclick="toast(pin?'تُفعَّل الخطوة القادمة: الوجهة وإرسال الطلب':'حدد موقعك أولاً')">🚖 اطلب سيارة</button><button style="width:100%;margin-bottom:8px" onclick="ask('تغيير بيانات التسجيل؟',()=>{localStorage.removeItem('karaj_rider');riderV()})">تغيير بياناتي</button><button class="y" style="width:100%" onclick="go('home')">رجوع</button>`;setTimeout(initMap,50)}
+const DEST=['بغداد','البصرة','ذي قار','ميسان','واسط','القادسية','المثنى','النجف','كربلاء','بابل','ديالى','الأنبار','صلاح الدين','كركوك','نينوى','أربيل','السليمانية','دهوك'];
+const J=k=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}};
+const fmt=n=>Number(n).toLocaleString('ar-IQ')+' د.ع',wa=p=>'https://wa.me/964'+p.replace(/^0/,''),dg=t=>t.replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+let unsub=[],openOrders=[],myTrip=null;function clr(){unsub.forEach(f=>f());unsub=[]}
+const BK='<button style="width:100%;margin-top:8px" onclick="go(\'home\')">رجوع</button>';
+function riderV(){const p=J('karaj_rider'),a=$('app');clr();
+ if(!p){a.innerHTML=`<div class="card" style="cursor:default"><i>🧍</i><b>تسجيل الراكب</b><input id="rn" placeholder="الاسم الكامل"><input id="rp" type="tel" inputmode="numeric" placeholder="رقم الهاتف 07XXXXXXXXX" maxlength="11"><button class="y" style="width:100%" onclick="saveRider()">تسجيل</button></div>`+BK;return}
+ const oid=localStorage.getItem('karaj_order');if(oid)return watchOrder(oid);
+ a.innerHTML=`<div class="card" style="cursor:default"><i>👋</i><b>أهلاً ${p.name}</b><p>${p.phone}</p></div>
+ <div class="card" style="cursor:default;padding:14px"><b>🚖 اطلب سيارة</b><select id="dst"><option value="">اختر الوجهة</option>${DEST.map(d=>`<option>${d}</option>`).join('')}</select><div id="map"></div><div id="loc" style="margin:8px 0;font-size:14px">لم تحدد موقعك بعد: اضغط على الخريطة أو اسحب الدبوس أو استخدم زر موقعي</div><input id="near" placeholder="أقرب نقطة دالة (مثال: قرب مستشفى الشطرة)"><button class="y" style="width:100%" onclick="myLoc()">📍 موقعي الحالي</button><button style="width:100%;margin-top:8px" onclick="toggleSat()">🛰️ تبديل نوع الخريطة</button></div>
+ <button class="y" style="width:100%;margin-bottom:8px;font-size:18px" onclick="sendOrder()">🚖 اطلب سيارة</button>
+ <button style="width:100%;margin-bottom:8px;background:#889" onclick="ask('تغيير بيانات التسجيل؟',()=>{localStorage.removeItem('karaj_rider');riderV()})">تغيير بياناتي</button>`+BK;setTimeout(initMap,50)}
+function sendOrder(){const p=J('karaj_rider'),dest=$('dst').value;if(!dest)return toast('اختر الوجهة');if(!pin)return toast('حدد موقعك على الخريطة أولاً');if(!uid)return toast('انتظر اتصال السيرفر');
+ db.collection('orders').add({rid:uid,name:p.name,phone:p.phone,lat:pin.lat,lng:pin.lng,near:$('near').value.trim(),dest,status:'open',at:Date.now()}).then(r=>{localStorage.setItem('karaj_order',r.id);riderV()}).catch(e=>toast('خطأ: '+(e.code||e.message)))}
+function watchOrder(id){unsub.push(db.collection('orders').doc(id).onSnapshot(d=>{const o=d.data(),a=$('app');if(!o||v!='rider')return;
+ if(o.status=='open')a.innerHTML=`<div class="card" style="cursor:default"><i>⏳</i><b>جارٍ البحث عن سائق</b><p>إلى ${o.dest}: وصل طلبك لكل السواق المتاحين</p></div><button style="width:100%" onclick="endOrder('cancelled')">إلغاء الطلب</button>`;
+ else if(o.status=='accepted')a.innerHTML=`<div class="card" style="cursor:default"><i>✅</i><b>قبل طلبك سائق</b><p><b>${o.driverName}</b><br>${o.car} - لوحة ${o.plate}<br>سعر الرحلة: <b>${fmt(o.price)}</b></p><a href="tel:${o.driverPhone}"><button class="y">📞 اتصال</button></a> <a href="${wa(o.driverPhone)}" target="_blank"><button>💬 واتساب</button></a></div><button style="width:100%" onclick="endOrder('done')">تمت الرحلة</button>`;
+ else{localStorage.removeItem('karaj_order');riderV()}}))}
+function endOrder(s){db.collection('orders').doc(localStorage.getItem('karaj_order')).update({status:s}).catch(e=>toast('خطأ: '+(e.code||e.message)))}
+function driverV(){const p=J('karaj_driver'),a=$('app');clr();
+ if(!p){a.innerHTML=`<div class="card" style="cursor:default"><i>🚗</i><b>تسجيل السائق</b><input id="dn" placeholder="الاسم الكامل"><input id="dp" type="tel" inputmode="numeric" maxlength="11" placeholder="رقم الهاتف 07XXXXXXXXX"><input id="dc" placeholder="نوع السيارة (مثال: كيا أوبتيما 2018)"><input id="dl" placeholder="رقم اللوحة"><p style="text-align:right;margin:8px 0"><b>الوجهات التي تسافر إليها:</b></p><div style="text-align:right">${DEST.map(d=>`<label style="display:inline-block;width:48%;padding:5px"><input type="checkbox" class="dd" value="${d}" style="width:auto;margin:0 0 0 4px">${d}</label>`).join('')}</div><button class="y" style="width:100%;margin-top:10px" onclick="saveDriver()">تسجيل</button></div>`+BK;return}
+ a.innerHTML=`<div class="card" style="cursor:default"><i>🚗</i><b>${p.name}</b><p>${p.car} - ${p.plate}<br>وجهاتك: ${p.dests.join('، ')}</p><button id="av" onclick="toggleAv()"></button></div><div id="trip"></div><div id="reqs"></div><button style="width:100%;margin-top:8px;background:#889" onclick="ask('تغيير بيانات السائق؟',()=>{localStorage.removeItem('karaj_driver');driverV()})">تغيير بياناتي</button>`+BK;
+ paintAv();myTrip=null;openOrders=[];
+ unsub.push(db.collection('orders').where('status','==','open').onSnapshot(s=>{openOrders=s.docs.map(d=>({id:d.id,...d.data()}));paintReqs()},e=>toast('خطأ: '+(e.code||e.message))));
+ unsub.push(db.collection('orders').where('driverId','==',uid).onSnapshot(s=>{myTrip=s.docs.map(d=>({id:d.id,...d.data()})).find(o=>o.status=='accepted')||null;paintReqs()}))}
+function paintAv(){const on=localStorage.getItem('karaj_avail')=='1',b=$('av');if(!b)return;b.textContent=on?'🟢 متاح: اضغط لتصبح غير متاح':'🔴 غير متاح: اضغط لتصبح متاحاً';b.style.background=on?'#1e9e4a':'#c0392b'}
+function toggleAv(){const n=localStorage.getItem('karaj_avail')=='1'?'0':'1';localStorage.setItem('karaj_avail',n);db.collection('drivers').doc(uid).update({avail:n=='1'}).catch(()=>{});paintAv();paintReqs()}
+function paintReqs(){if(v!='driver'||!$('reqs'))return;const p=J('karaj_driver'),on=localStorage.getItem('karaj_avail')=='1',keep={};
+ document.querySelectorAll('[id^=pr]').forEach(e=>keep[e.id]=e.value);
+ $('trip').innerHTML=myTrip?`<div class="card" style="cursor:default"><i>🧳</i><b>رحلتك الحالية</b><p><b>${myTrip.name}</b> إلى ${myTrip.dest}<br>${myTrip.near||''}<br>السعر: <b>${fmt(myTrip.price)}</b></p><a href="tel:${myTrip.phone}"><button class="y">📞 اتصال</button></a> <a href="https://www.google.com/maps?q=${myTrip.lat},${myTrip.lng}" target="_blank"><button>📍 موقع الراكب</button></a><br><br><button onclick="db.collection('orders').doc('${myTrip.id}').update({status:'done'})">تمت الرحلة</button></div>`:'';
+ if(myTrip){$('reqs').innerHTML='';return}
+ if(!on){$('reqs').innerHTML='<div class="card" style="cursor:default">اضغط «متاح» لتستقبل الطلبات</div>';return}
+ const r=openOrders.filter(o=>p.dests.includes(o.dest)).sort((a,b)=>b.at-a.at);
+ $('reqs').innerHTML=r.length?r.map(o=>`<div class="card" style="cursor:default"><b>🧍 ${o.name}</b><p>إلى <b>${o.dest}</b><br>${o.near||''}</p><a href="https://www.google.com/maps?q=${o.lat},${o.lng}" target="_blank">📍 افتح موقع الراكب</a><input id="pr${o.id}" type="number" inputmode="numeric" placeholder="سعر الرحلة بالدينار"><button class="y" style="width:100%" onclick="accept('${o.id}')">✅ قبول الطلب</button></div>`).join(''):'<div class="card" style="cursor:default">لا توجد طلبات الآن، انتظر...</div>';
+ for(const k in keep){const e=$(k);if(e)e.value=keep[k]}}
+function accept(id){const price=+$('pr'+id).value,p=J('karaj_driver');if(price<1000)return toast('اكتب سعر الرحلة أولاً');const ref=db.collection('orders').doc(id);
+ db.runTransaction(async t=>{const d=await t.get(ref);if(!d.exists||d.data().status!='open')throw new Error('taken');t.update(ref,{status:'accepted',driverId:uid,driverName:p.name,driverPhone:p.phone,car:p.car,plate:p.plate,price})}).then(()=>toast('تم قبول الطلب ✅')).catch(e=>toast(e.message=='taken'?'سبقك سائق آخر إلى هذا الطلب':'خطأ: '+(e.code||e.message)))}
+function saveDriver(){const g=i=>$(i).value.trim(),phone=dg(g('dp')),dests=[...document.querySelectorAll('.dd:checked')].map(e=>e.value),o={name:g('dn'),phone,car:g('dc'),plate:g('dl'),dests};
+ if(o.name.length<3||!o.car||!o.plate)return toast('أكمل كل البيانات');if(!/^07\d{9}$/.test(phone))return toast('رقم الهاتف غير صحيح، مثال: 07701234567');if(!dests.length)return toast('اختر وجهة واحدة على الأقل');if(!uid)return toast('انتظر اتصال السيرفر ثم أعد المحاولة');
+ db.collection('drivers').doc(uid).set({...o,avail:false,at:Date.now()}).then(()=>{localStorage.setItem('karaj_driver',JSON.stringify(o));localStorage.setItem('karaj_avail','0');toast('تم التسجيل ✅');driverV()}).catch(e=>toast('خطأ: '+(e.code||e.message)))}
 function saveRider(){const name=$('rn').value.trim(),phone=$('rp').value.trim().replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d));
  if(name.length<3)return toast('اكتب اسمك الكامل');if(!/^07\d{9}$/.test(phone))return toast('رقم الهاتف غير صحيح، مثال: 07701234567');if(!uid)return toast('انتظر اتصال السيرفر ثم أعد المحاولة');
  db.collection('riders').doc(uid).set({name,phone,at:Date.now()}).then(()=>{localStorage.setItem('karaj_rider',JSON.stringify({name,phone}));toast('تم التسجيل ✅');riderV()}).catch(e=>toast('خطأ: '+(e.code||e.message)))}
@@ -59,12 +95,13 @@ function initMap(){const el=$('map');if(!el)return;if(!window.L)return toast('ت
  map.on('click',e=>{mk.setLatLng(e.latlng);setPin(e.latlng.lat,e.latlng.lng,false)})}
 function setPin(lat,lng,move){pin={lat,lng};if(move&&map){mk.setLatLng([lat,lng]);map.setView([lat,lng],18)}const e=$('loc');if(e)e.textContent='✅ تم تحديد الموقع: '+lat.toFixed(5)+' , '+lng.toFixed(5)}
 function myLoc(){if(!navigator.geolocation)return toast('الجهاز لا يدعم تحديد الموقع');toast('جارٍ تحديد موقعك...');navigator.geolocation.getCurrentPosition(p=>setPin(p.coords.latitude,p.coords.longitude,true),()=>toast('فعّل خدمة الموقع وأذن للتطبيق'),{enableHighAccuracy:true,timeout:15000})}
-function go(x){v=x;draw();scrollTo(0,0)}
+function go(x){clr();v=x;draw();scrollTo(0,0)}
 function draw(){const a=$('app');
  if(v=='home')a.innerHTML=`<div class="card" onclick="go('rider')"><i>🧍</i><b>أنا راكب</b><p>اطلب سيارة لوجهتك</p></div>
   <div class="card" onclick="go('driver')"><i>🚗</i><b>أنا سائق</b><p>استقبل طلبات الركاب</p></div><div class="ver">الإصدار ${VER}</div><div class="ver" id="st" style="font-weight:bold">${st}</div>`;
  else if(v=='rider')riderV();
+ else if(v=='driver')driverV();
  else a.innerHTML=`<div class="card" style="cursor:default"><i>${v=='rider'?'🧍':'🚗'}</i><b>${v=='rider'?'شاشة الراكب':'شاشة السائق'}</b><p>تُفعَّل في المرحلة القادمة</p></div><button class="y" style="width:100%" onclick="go('home')">رجوع</button>`;
- if(v=='driver')toast('تعمل الواجهة بنجاح ✅')}
+ }
 initFB();draw();if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
 </script></body></html>
