@@ -18,16 +18,25 @@ button.y{background:var(--y);color:var(--tx);font-weight:bold}
 </style></head><body>
 <header><h1>🚖 كراج الشطرة</h1><small>سفر آمن بين المحافظات</small></header>
 <div id="app"></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
-const VER='1.0 - المرحلة 1';let v='home';
+const FB={apiKey:"AIzaSyDvYj0bbesS6xTL22XF59EaA7No05rEA7w",authDomain:"karaj-shatra.firebaseapp.com",projectId:"karaj-shatra",storageBucket:"karaj-shatra.firebasestorage.app",messagingSenderId:"400980272926",appId:"1:400980272926:web:a5d10fc103ffd5f46dcb0f"};
+let db=null,uid=null,st='⏳ جارٍ الاتصال بالسيرفر...';
+function setSt(t){st=t;const e=document.getElementById('st');if(e)e.textContent=t}
+function initFB(){try{firebase.initializeApp(FB);db=firebase.firestore();
+ firebase.auth().signInAnonymously().then(u=>{uid=u.user.uid;return db.collection('ping').doc(uid).set({t:Date.now()})})
+ .then(()=>setSt('✅ متصل بالسيرفر')).catch(e=>setSt('❌ خطأ: '+(e.code||e.message)))}catch(e){setSt('❌ '+e.message)}}
+const VER='1.1 - المرحلة 2';let v='home';
 const $=id=>document.getElementById(id);
 function toast(m){const t=document.createElement('div');t.textContent=m;t.style.cssText='position:fixed;left:50%;bottom:calc(30px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#0b3d91;color:#fff;padding:12px 20px;border-radius:14px;z-index:120;max-width:85%;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.3)';document.body.appendChild(t);setTimeout(()=>t.remove(),2800)}
 function ask(m,ok){const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:120;display:flex;align-items:center;justify-content:center';d.innerHTML=`<div style="background:#fff;padding:20px;width:80%;max-width:320px;text-align:center;border-radius:18px"><p style="font-weight:bold">${m}</p><button id="y" class="y" style="margin:4px">نعم</button><button id="n" style="margin:4px;background:#889">إلغاء</button></div>`;document.body.appendChild(d);d.querySelector('#y').onclick=()=>{d.remove();ok()};d.querySelector('#n').onclick=()=>d.remove()}
 function go(x){v=x;draw();scrollTo(0,0)}
 function draw(){const a=$('app');
  if(v=='home')a.innerHTML=`<div class="card" onclick="go('rider')"><i>🧍</i><b>أنا راكب</b><p>اطلب سيارة لوجهتك</p></div>
-  <div class="card" onclick="go('driver')"><i>🚗</i><b>أنا سائق</b><p>استقبل طلبات الركاب</p></div><div class="ver">الإصدار ${VER}</div>`;
+  <div class="card" onclick="go('driver')"><i>🚗</i><b>أنا سائق</b><p>استقبل طلبات الركاب</p></div><div class="ver">الإصدار ${VER}</div><div class="ver" id="st" style="font-weight:bold">${st}</div>`;
  else a.innerHTML=`<div class="card" style="cursor:default"><i>${v=='rider'?'🧍':'🚗'}</i><b>${v=='rider'?'شاشة الراكب':'شاشة السائق'}</b><p>تُفعَّل في المرحلة القادمة</p></div><button class="y" style="width:100%" onclick="go('home')">رجوع</button>`;
  if(v!='home')toast('تعمل الواجهة بنجاح ✅')}
-draw();if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
+initFB();draw();if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
 </script></body></html>
