@@ -1,0 +1,33 @@
+<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b3d91"><link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png"><title>كراج الشطرة</title>
+<style>
+:root{--b:#0b3d91;--y:#ffc107;--bg:#f4f7fc;--tx:#14213d}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;font-family:Tahoma,Arial,sans-serif;background:var(--bg);color:var(--tx)}
+header{background:var(--b);color:#fff;padding:calc(14px + env(safe-area-inset-top)) 16px 18px;text-align:center;border-bottom:5px solid var(--y);border-radius:0 0 22px 22px}
+header h1{margin:0;font-size:24px}header small{color:var(--y)}
+#app{padding:18px 14px calc(30px + env(safe-area-inset-bottom));max-width:520px;margin:auto}
+.card{background:#fff;border-radius:20px;padding:22px 14px;text-align:center;box-shadow:0 4px 14px rgba(11,61,145,.12);margin:14px 0;cursor:pointer;border:2px solid transparent}
+.card:active{border-color:var(--y)}.card i{display:block;font-style:normal;font-size:46px;margin-bottom:6px}
+.card b{font-size:19px;color:var(--b)}.card p{margin:6px 0 0;color:#667}
+button{font:inherit;border:0;border-radius:12px;padding:12px 18px;background:var(--b);color:#fff;cursor:pointer}
+button.y{background:var(--y);color:var(--tx);font-weight:bold}
+.ver{text-align:center;color:#99a;font-size:12px;margin-top:24px}
+</style></head><body>
+<header><h1>🚖 كراج الشطرة</h1><small>سفر آمن بين المحافظات</small></header>
+<div id="app"></div>
+<script>
+const VER='1.0 - المرحلة 1';let v='home';
+const $=id=>document.getElementById(id);
+function toast(m){const t=document.createElement('div');t.textContent=m;t.style.cssText='position:fixed;left:50%;bottom:calc(30px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#0b3d91;color:#fff;padding:12px 20px;border-radius:14px;z-index:120;max-width:85%;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.3)';document.body.appendChild(t);setTimeout(()=>t.remove(),2800)}
+function ask(m,ok){const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:120;display:flex;align-items:center;justify-content:center';d.innerHTML=`<div style="background:#fff;padding:20px;width:80%;max-width:320px;text-align:center;border-radius:18px"><p style="font-weight:bold">${m}</p><button id="y" class="y" style="margin:4px">نعم</button><button id="n" style="margin:4px;background:#889">إلغاء</button></div>`;document.body.appendChild(d);d.querySelector('#y').onclick=()=>{d.remove();ok()};d.querySelector('#n').onclick=()=>d.remove()}
+function go(x){v=x;draw();scrollTo(0,0)}
+function draw(){const a=$('app');
+ if(v=='home')a.innerHTML=`<div class="card" onclick="go('rider')"><i>🧍</i><b>أنا راكب</b><p>اطلب سيارة لوجهتك</p></div>
+  <div class="card" onclick="go('driver')"><i>🚗</i><b>أنا سائق</b><p>استقبل طلبات الركاب</p></div><div class="ver">الإصدار ${VER}</div>`;
+ else a.innerHTML=`<div class="card" style="cursor:default"><i>${v=='rider'?'🧍':'🚗'}</i><b>${v=='rider'?'شاشة الراكب':'شاشة السائق'}</b><p>تُفعَّل في المرحلة القادمة</p></div><button class="y" style="width:100%" onclick="go('home')">رجوع</button>`;
+ if(v!='home')toast('تعمل الواجهة بنجاح ✅')}
+draw();if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
+</script></body></html>
