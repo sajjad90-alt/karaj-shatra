@@ -32,7 +32,7 @@ function setSt(t){st=t;const e=document.getElementById('st');if(e)e.textContent=
 function initFB(){try{firebase.initializeApp(FB);db=firebase.firestore();
  firebase.auth().signInAnonymously().then(u=>{uid=u.user.uid;return db.collection('ping').doc(uid).set({t:Date.now()})})
  .then(()=>setSt('✅ متصل بالسيرفر')).catch(e=>setSt('❌ خطأ: '+(e.code||e.message)))}catch(e){setSt('❌ '+e.message)}}
-const VER='1.5 - المرحلة 3 (خرائط وأسماء)';let v='home';
+const VER='1.6 - المرحلة 3 (إصلاح الخرائط)';let v='home';
 const $=id=>document.getElementById(id);
 function toast(m){const t=document.createElement('div');t.textContent=m;t.style.cssText='position:fixed;left:50%;bottom:calc(30px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#0b3d91;color:#fff;padding:12px 20px;border-radius:14px;z-index:120;max-width:85%;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.3)';document.body.appendChild(t);setTimeout(()=>t.remove(),2800)}
 function ask(m,ok){const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:120;display:flex;align-items:center;justify-content:center';d.innerHTML=`<div style="background:#fff;padding:20px;width:80%;max-width:320px;text-align:center;border-radius:18px"><p style="font-weight:bold">${m}</p><button id="y" class="y" style="margin:4px">نعم</button><button id="n" style="margin:4px;background:#889">إلغاء</button></div>`;document.body.appendChild(d);d.querySelector('#y').onclick=()=>{d.remove();ok()};d.querySelector('#n').onclick=()=>d.remove()}
@@ -52,12 +52,7 @@ function initMap(){const el=$('map');if(!el)return;if(!window.L)return toast('ت
   clar:L.tileLayer('https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,maxNativeZoom:18,attribution:'Tiles © Esri Clarity'}),
   osm:L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:19,attribution:'© OpenStreetMap'}),
   lab:L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:20,attribution:'© OpenStreetMap © CARTO'})};
- curL=localStorage.getItem('karaj_layer')||'esri';showL();localStorage.setItem('karaj_layer',curL);toast(curL=='sat'?'🛰️ قمر صناعي':'🗺️ خريطة عادية')}
-function initMap(){const el=$('map');if(!el)return;if(!window.L)return toast('تعذر تحميل الخريطة، تأكد من الإنترنت');if(map){map.remove();map=null}
- const c=pin||{lat:31.4164,lng:46.1692};map=L.map('map').setView([c.lat,c.lng],14);
- lays={osm:L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:19,attribution:'© OpenStreetMap'}),
-  sat:L.layerGroup([L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,maxNativeZoom:18,attribution:'Tiles © Esri'}),L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,maxNativeZoom:18})])};
- curL=localStorage.getItem('karaj_layer')||'sat';lays[curL].addTo(map);
+ const sv=localStorage.getItem('karaj_layer');curL=LN[sv]?sv:'esri';showL();
  mk=L.marker([c.lat,c.lng],{draggable:true,icon:L.divIcon({html:'<div style="font-size:34px;line-height:34px">📍</div>',className:'',iconSize:[34,34],iconAnchor:[17,34]})}).addTo(map);
  if(pin)setPin(pin.lat,pin.lng,false);
  mk.on('dragend',()=>{const p=mk.getLatLng();setPin(p.lat,p.lng,false)});
