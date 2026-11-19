@@ -144,7 +144,7 @@ function STATS(){const o=data.o,t=new Date().setHours(0,0,0,0),cnt={};o.forEach(
  const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([d,n])=>`<p>${esc(d)}: ${n}</p>`).join(''),K=(a,b)=>`<div class="card" style="cursor:default;padding:12px"><b>${a}</b><br>${b}</div>`,n=s=>o.filter(x=>x.status==s).length;
  return K('السواق',`${data.d.length} مسجّل، ${data.d.filter(x=>x.avail).length} متاح الآن`)+K('الركاب',data.r.length+' مسجّل')+K('طلبات اليوم',o.filter(x=>x.at>=t).length)+K('كل الطلبات',`مفتوحة ${n('open')} | مقبولة ${n('accepted')} | منتهية ${n('done')} | ملغاة ${n('cancelled')}`)+K('أكثر الوجهات طلباً',top||'-')}
 /* ===== الإشعارات خارج التطبيق (FCM) ===== */
-const VAPID='';let msg=null;
+const VAPID='BGSZ-H1injwoXQGFmrKVR-b5okx0q89ZN4ZA2d7crMU0jNk5R1JnJQPL1owwYgeMDRMaYPJIPCdDZT0zdvVXQCk';let msg=null;
 const PB='<button style="width:100%;margin-top:8px;background:#1e9e4a" onclick="enablePush()">🔔 تفعيل الإشعارات</button>';
 async function enablePush(){if(!VAPID)return toast('الإشعارات تُفعَّل بعد إعداد مفتاح VAPID');if(!('Notification' in window))return toast('جهازك لا يدعم الإشعارات');
  if(await Notification.requestPermission()!='granted')return toast('لم تسمح بالإشعارات');
