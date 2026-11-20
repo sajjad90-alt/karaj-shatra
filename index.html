@@ -28,12 +28,15 @@ button.y{background:var(--y);color:var(--tx);font-weight:bold}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
 <script>
 const FB={apiKey:"AIzaSyDvYj0bbesS6xTL22XF59EaA7No05rEA7w",authDomain:"karaj-shatra.firebaseapp.com",projectId:"karaj-shatra",storageBucket:"karaj-shatra.firebasestorage.app",messagingSenderId:"400980272926",appId:"1:400980272926:web:a5d10fc103ffd5f46dcb0f"};
-let db=null,uid=null,st='⏳ جارٍ الاتصال بالسيرفر...';
+let HP=Promise.resolve(),HR=0,db=null,uid=null,st='⏳ جارٍ الاتصال بالسيرفر...';
 function setSt(t){st=t;const e=document.getElementById('st');if(e)e.textContent=t}
+async function healProfile(){if(!uid)return;
+ for(const [k,c] of [['karaj_rider','riders'],['karaj_driver','drivers']]){const p=J(k);if(!p)continue;
+  try{const r=db.collection(c).doc(uid);if(!(await r.get()).exists)await r.set(c=='riders'?{name:p.name,phone:p.phone,at:Date.now()}:{...p,avail:localStorage.getItem('karaj_avail')=='1',at:Date.now()})}catch(e){}}}
 function initFB(){try{firebase.initializeApp(FB);db=firebase.firestore();
  firebase.auth().signInAnonymously().then(u=>{uid=u.user.uid;return db.collection('banned').doc('_ping').get()})
- .then(()=>{setSt('✅ متصل بالسيرفر');watchMe();checkBan()}).catch(e=>setSt('❌ خطأ: '+(e.code||e.message)))}catch(e){setSt('❌ '+e.message)}}
-const VER='3.0 - القوائم والإشعارات';let v='home';
+ .then(()=>{setSt('✅ متصل بالسيرفر');HP=checkBan().catch(()=>{}).then(healProfile).then(watchMe)}).catch(e=>setSt('❌ خطأ: '+(e.code||e.message)))}catch(e){setSt('❌ '+e.message)}}
+const VER='3.1 - إصلاح الحساب';let v='home';
 const $=id=>document.getElementById(id);
 function toast(m){const t=document.createElement('div');t.textContent=m;t.style.cssText='position:fixed;left:50%;bottom:calc(30px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#0b3d91;color:#fff;padding:12px 20px;border-radius:14px;z-index:120;max-width:85%;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.3)';document.body.appendChild(t);setTimeout(()=>t.remove(),2800)}
 function ask(m,ok){const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:120;display:flex;align-items:center;justify-content:center';d.innerHTML=`<div style="background:#fff;padding:20px;width:80%;max-width:320px;text-align:center;border-radius:18px"><p style="font-weight:bold">${m}</p><button id="y" class="y" style="margin:4px">نعم</button><button id="n" style="margin:4px;background:#889">إلغاء</button></div>`;document.body.appendChild(d);d.querySelector('#y').onclick=()=>{d.remove();ok()};d.querySelector('#n').onclick=()=>d.remove()}
@@ -130,7 +133,7 @@ const WM=(p,m)=>'https://wa.me/964'+String(p).replace(/^0/,'')+'?text='+encodeUR
 function openList(k){const ok=k=='drivers'?(J('karaj_rider')||J('karaj_driver')):J('karaj_driver');if(!ok)return toast(k=='drivers'?'سجّل كراكب أو كسائق أولاً':'هذه القائمة للسواق المسجلين فقط');go(k)}
 function listV(){const k=v;clr();$('app').innerHTML=`<div class="card" style="cursor:default"><b>${k=='drivers'?'🚖 السواق ووجهاتهم':'🧳 طلبات الركاب'}</b><select id="fd" onchange="paintL()"><option value="">كل الوجهات</option>${DEST.map(d=>`<option>${d}</option>`).join('')}</select></div><div id="ll"></div>`+BK;
  const q=k=='drivers'?db.collection('drivers'):db.collection('orders').where('status','==','open');
- unsub.push(q.onSnapshot(s=>{LD=s.docs.map(d=>({id:d.id,...d.data()}));paintL()},e=>toast('خطأ: '+(e.code||e.message))))}
+ const vv=v;HP.then(()=>{if(v!=vv)return;unsub.push(q.onSnapshot(s=>{LD=s.docs.map(d=>({id:d.id,...d.data()}));paintL()},e=>{if(e.code=='permission-denied'&&!HR++)healProfile().then(()=>go(vv));else toast('خطأ: '+(e.code||e.message))}))})}
 function paintL(){const el=$('ll');if(!el)return;const f=$('fd').value,k=v;let r=LD.filter(x=>!f||(k=='drivers'?(x.dests||[]).includes(f):x.dest==f));
  k=='drivers'?r.sort((a,b)=>(b.avail?1:0)-(a.avail?1:0)):r.sort((a,b)=>b.at-a.at);
  el.innerHTML=r.length?r.map(x=>k=='drivers'?`<div class="card" style="cursor:default;text-align:right"><b>${esc(x.name)}</b> ${x.avail?'🟢 متاح':'⚪ غير متاح'}<br>${esc(x.car)} - ${esc(x.plate)}<br><small>وجهاته: ${esc((x.dests||[]).join('، '))}</small><br><a href="${esc(WM(x.phone,'السلام عليكم، أنا من تطبيق كراج الشطرة وأريد التفاهم على رحلة'))}" target="_blank"><button class="y" style="width:100%;margin-top:8px">💬 واتساب</button></a></div>`
